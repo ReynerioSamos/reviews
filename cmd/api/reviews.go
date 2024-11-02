@@ -159,7 +159,7 @@ func (a *applicationDependencies) updateHelpfulCountHandler(w http.ResponseWrite
 		return
 	}
 
-	err = a.reviewModel.UpdateHelpfulCOunt(id, incomingData.Increment)
+	err = a.reviewModel.UpdateHelpfulCount(id, incomingData.Increment)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):

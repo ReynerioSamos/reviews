@@ -22,3 +22,10 @@ db/migrations/new:
 db/migrations/up:
 	@echo 'Running up migrations...'
 	migrate -path ./migrations -database ${PRODUCTREVIEW_DB_DSN} up
+
+## db/migrations/down: apply all down database migrations
+## useful for resetting db for blank testing
+.PHONY: db/migrations/down
+db/migrations/down:
+	@echo 'Running down migrations...'
+	migrate -path ./migrations -database ${PRODUCTREVIEW_DB_DSN} down

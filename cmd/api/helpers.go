@@ -113,9 +113,7 @@ func (a *applicationDependencies) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-func (a *applicationDependencies) getSingleQueryParameter(queryParameters url.Values,
-	key string,
-	defaultValue string) string {
+func (a *applicationDependencies) getSingleQueryParameter(queryParameters url.Values, key string, defaultValue string) string {
 	// url.values is a key:value hash map of the query parameter
 	result := queryParameters.Get(key)
 	if result == "" {
@@ -125,9 +123,7 @@ func (a *applicationDependencies) getSingleQueryParameter(queryParameters url.Va
 }
 
 // call when we have multiple comma-separate values
-func (a *applicationDependencies) getMultipleQueryParameters(queryParameters url.Values,
-	key string,
-	defaultValue []string) []string {
+func (a *applicationDependencies) getMultipleQueryParameters(queryParameters url.Values, key string, defaultValue []string) []string {
 	result := queryParameters.Get(key)
 	if result == "" {
 		return defaultValue
@@ -136,10 +132,7 @@ func (a *applicationDependencies) getMultipleQueryParameters(queryParameters url
 }
 
 // this method can cause a validation error when trying to convert the string to a valid integer value
-func (a *applicationDependencies) getSingleIntegerParameter(queryParameters url.Values,
-	key string,
-	defaultValue int,
-	v *validator.Validator) int {
+func (a *applicationDependencies) getSingleIntegerParameter(queryParameters url.Values, key string, defaultValue int, v *validator.Validator) int {
 	result := queryParameters.Get(key)
 	if result == "" {
 		return defaultValue

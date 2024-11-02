@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/ReynerioSamos/reviews/internal/validator"
@@ -20,10 +21,9 @@ type Review struct {
 	RID           int64     `json:"rid"`                    // unique value for each product
 	Prod_ID       int64     `json:"prod_id"`                // associated product ID
 	Rating        int8      `json:"rating"`                 // rating field from 1-5
-	Helpful_Count int64     `json:"helpful_count"`          // helpful_count integer
+	Helpful_Count int       `json:"helpful_count"`          // helpful_count integer
 	CreatedAt     time.Time `json:"-"`                      // database timestamp
 	ProductName   string    `json:"product_name,omitempty"` // additional field to help with joins
-
 }
 
 type ReviewModel struct {
@@ -31,6 +31,7 @@ type ReviewModel struct {
 }
 
 func ValidateReview(v *validator.Validator, review *Review, vdb ReviewModel) {
+	log.Printf("Validating review for product ID: %d", review.Prod_ID)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	// Check if ProdID is positive
@@ -42,16 +43,17 @@ func ValidateReview(v *validator.Validator, review *Review, vdb ReviewModel) {
 	v.Check(review.Rating != 0, "Rating:", "must be prodivded")
 
 	// Check if product exists using a prepared statement
+	log.Printf("Checking product existance in database...")
 	var exists bool
 	err := vdb.DB.QueryRowContext(ctx,
-		"SELECT EXISTS(SELECT 1 FROM product WHERE pid = $1)",
+		`SELECT EXISTS(SELECT 1 FROM product WHERE pid = $1)`,
 		review.Prod_ID).Scan(&exists)
 
 	if err != nil {
+		log.Printf("Database error: %v", err)
 		v.AddError("database", fmt.Sprintf("error checking product existance: %s", err))
 		return
 	}
-
 	if !exists {
 		v.AddError("Prod_ID:", "referenced prodcut does not exist")
 	}
@@ -83,15 +85,15 @@ func (r ReviewModel) Insert(review *Review) error {
                 WHERE r.prod_id = p.pid
             )
             WHERE pid = $1
-            RETURNING name
+            RETURNING pname
         )
         SELECT 
             ir.rid,
             ir.created_at,
             ir.prod_id,
-			ua.pname
+			ua.pname,
             ir.rating,
-			ir.helpful_count,
+			ir.helpful_count
         FROM inserted_review ir
         CROSS JOIN update_avg ua;
     `
@@ -132,8 +134,8 @@ func (r ReviewModel) Get(id int64) (*Review, error) {
 	// the SQL query to be executed against the database table
 	query := `
 		SELECT r.rid, r.created_at, r.prod_id, p.pname , r.rating, r.helpful_count
-		FROM review AS r
-		JOIN product P
+		FROM review r
+		JOIN product p ON r.prod_id = p.pid
 		WHERE r.rid = $1
 		`
 	// declare a variable of type product to store the returned product
@@ -146,7 +148,7 @@ func (r ReviewModel) Get(id int64) (*Review, error) {
 		&review.RID,
 		&review.CreatedAt,
 		&review.Prod_ID,
-		&review.Prod_ID,
+		&review.ProductName,
 		&review.Rating,
 		&review.Helpful_Count,
 	)
@@ -234,7 +236,7 @@ func (r ReviewModel) Update(review *Review) error {
 }
 
 // increments helpful_count attribute by 1 or -1 depending on input
-func (r ReviewModel) UpdateHelpfulCOunt(rid int64, increment int8) error {
+func (r ReviewModel) UpdateHelpfulCount(rid int64, increment int8) error {
 	// Validate input
 	if increment != 1 && increment != -1 {
 		return fmt.Errorf("invalid increment value: must be 1 pr -1")

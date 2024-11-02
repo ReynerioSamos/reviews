@@ -110,8 +110,8 @@ func (p ProductModel) Update(product *Product) error {
 	// The SQL query to be executed against the database table
 	query := `
 		UPDATE product
-		SET pname = $1, product_category = $2, img_url = $3
-		WHERE id = $4
+		SET pname = $1, product_category = $2, image_url = $3
+		WHERE pid = $4
 		RETURNING pname, product_category
 		`
 
@@ -185,7 +185,7 @@ func (p ProductModel) GetAll(pname string, product_category string, avg_rating f
 	avgRatingStr := fmt.Sprintf("%.2f", avg_rating)
 	// It's then compared using CAST() from postgresql to better match corresponding decimals using LIKE
 
-	query := fmt.Sprintf(`
+	query := `
 		SELECT COUNT(*) OVER(), pid, created_at, pname, product_category, image_URL, avg_rating
 		FROM product
 		WHERE (to_tsvector('simple', pname) @@
@@ -193,9 +193,9 @@ func (p ProductModel) GetAll(pname string, product_category string, avg_rating f
 		AND (to_tsvector('simple', product_category) @@
 				plainto_tsquery('simple', $2) OR $2 = '')
 		AND (CAST(avg_rating AS TEXT) LIKE $3 OR $3 = '')
-		ORDER BY %s %s, pid ASC
+		ORDER BY pid
 		LIMIT $4 OFFSET $5
-		`, filters.sortColumn(), filters.sortDirection())
+		`
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -217,19 +217,21 @@ func (p ProductModel) GetAll(pname string, product_category string, avg_rating f
 	for rows.Next() {
 		var product Product
 		err := rows.Scan(
-			&totalRecords,
+			&totalRecords, // window function result
 			&product.PID,
 			&product.CreatedAt,
 			&product.Pname,
 			&product.Product_Category,
 			&product.Image_URL,
 			&product.Avg_Rating)
+
 		if err != nil {
 			return nil, Metadata{}, fmt.Errorf("scanning product row: %w", err)
 		}
 		// add the row to our slice
 		products = append(products, &product)
 	} // end of the loop
+
 	// after we exit the loop, we need to check if it generated any errors
 	err = rows.Err()
 	if err != nil {

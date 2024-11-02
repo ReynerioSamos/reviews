@@ -1,7 +1,6 @@
 package data
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/ReynerioSamos/reviews/internal/validator"
@@ -12,18 +11,11 @@ import (
 // The Filters type will contain the fields related to pagination
 // and eventually the fields related to sorting
 
-const (
-	MaxPageSize     = 100
-	MaxPageNumber   = 500
-	DefaultPageSize = 20
-	DefaultPage     = 1
-)
-
 type Filters struct {
-	Page         int      `json:"page"`      // which page number does the client want
-	PageSize     int      `json:"page_size"` // how records per page
-	Sort         string   `json:"sort"`
-	SortSafeList []string `json:"sort_safe_list"` //allowed sort fiels
+	Page         int // which page number does the client want
+	PageSize     int // how records per page
+	Sort         string
+	SortSafeList []string //allowed sort fiels
 }
 
 type Metadata struct {
@@ -32,57 +24,27 @@ type Metadata struct {
 	FirstPage    int `json:"first_page,omitempty"`
 	LastPage     int `json:"last_page,omitempty"`
 	TotalRecords int `json:"total_records,omitempty"`
-	// Some extra flags to check for next and prev pages
-	HasNextPage bool `json:"has_next_page,omitempty"`
-	HasPrevPage bool `json:"has_prev_page,omitempty"`
-	// These help track next and prev pages
-	NextPage int `json:"next_page,omitempty"`
-	PrevPage int `json:"prev_page,omitempty"`
-}
-
-// NewFilters creates a new Filters instance with default values
-func NewFilters(sortSafeList []string) Filters {
-	return Filters{
-		Page:         DefaultPage,
-		PageSize:     DefaultPageSize,
-		Sort:         sortSafeList[0], //Default to first safe sort option
-		SortSafeList: sortSafeList,
-	}
 }
 
 func ValidateFilters(v *validator.Validator, f Filters) {
 	// Validate page number
 	v.Check(f.Page > 0, "page", "must be greater than zero")
-	v.Check(f.Page <= MaxPageNumber, "page", fmt.Sprintf("must be a maximum of %d", MaxPageNumber))
+	v.Check(f.Page <= 500, "page", "must be a maximum of 500")
 
 	// Validate page size
 	v.Check(f.PageSize > 0, "page_size", "must be greater than zero")
-	v.Check(f.PageSize <= MaxPageSize, "page_size", fmt.Sprintf("must be a maximum of %d", MaxPageSize))
-
-	// Validate sort parameter
-	if f.Sort != "" {
-		sortField := strings.TrimPrefix(f.Sort, "-")
-		v.Check(validator.PermittedValue(sortField, f.SortSafeList...), "sort",
-			fmt.Sprintf("must be one of: %s", strings.Join(f.SortSafeList, ", ")))
-	}
+	v.Check(f.PageSize <= 100, "page_size", "must be a maximum of 100")
+	// Check if sort fields provided are valid
+	v.Check(validator.PermittedValue(f.Sort, f.SortSafeList...), "sort", "invalid sort value")
 }
 
 // Implement the sorting feature
 func (f Filters) sortColumn() string {
-
-	// Remove the leading hyphen if present
-	sortField := strings.TrimPrefix(f.Sort, "-")
-
 	// Validate against safe list
 	for _, safeValue := range f.SortSafeList {
 		if f.Sort == safeValue {
-			return sortField
+			return strings.TrimPrefix(f.Sort, "-")
 		}
-	}
-
-	// If sort field is not in safe list, we use first safe value
-	if len(f.SortSafeList) > 0 {
-		return f.SortSafeList[0]
 	}
 
 	// don't allow the operation to continue
@@ -110,30 +72,16 @@ func (f Filters) offset() int {
 }
 
 // Calculate the metadata
-func calculateMetaData(totalRecords, currentPage, pageSize int) Metadata {
+func calculateMetaData(totalRecords int, currentPage int, pageSize int) Metadata {
 	if totalRecords == 0 {
 		return Metadata{}
 	}
 
-	lastPage := (totalRecords + pageSize - 1) / pageSize
-
-	metadata := Metadata{
+	return Metadata{
 		CurrentPage:  currentPage,
 		PageSize:     pageSize,
 		FirstPage:    1,
-		LastPage:     lastPage,
+		LastPage:     (totalRecords + pageSize - 1) / pageSize,
 		TotalRecords: totalRecords,
-		HasNextPage:  currentPage < lastPage,
-		HasPrevPage:  currentPage > 1,
 	}
-
-	// calc next and prev pages
-	if metadata.HasNextPage {
-		metadata.NextPage = currentPage + 1
-	}
-	if metadata.HasPrevPage {
-		metadata.PrevPage = currentPage - 1
-	}
-
-	return metadata
 }
