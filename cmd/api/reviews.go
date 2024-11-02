@@ -40,6 +40,8 @@ func (a *applicationDependencies) createReviewHandler(w http.ResponseWriter, r *
 		return
 	}
 
+	fmt.Fprintf(w, "%+v\n", incomingData)
+
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/review/%d", review.RID))
 
