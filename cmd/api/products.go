@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	// import the data package which contains the definition for product
-	// _[space] is used as placeholder to let compiler know to ignore this dependancy
 	"github.com/ReynerioSamos/reviews/internal/data"
 	"github.com/ReynerioSamos/reviews/internal/validator"
 )
@@ -73,7 +71,6 @@ func (a *applicationDependencies) createProductHandler(w http.ResponseWriter, r 
 
 func (a *applicationDependencies) displayProductHandler(w http.ResponseWriter, r *http.Request) {
 	// get the id from the URL /v1/products/:id so that we can use it to query the products table
-	// We will implement the readIDParam() function later
 	id, err := a.readIDParam(r)
 	if err != nil {
 		a.notFoundResponse(w, r)
@@ -149,7 +146,7 @@ func (a *applicationDependencies) updateProductHandler(w http.ResponseWriter, r 
 		product.Product_Category = *incomingData.Product_Category
 	}
 
-	// if incomingData.Img_URL is nil, no update was provided
+	// if incomingData.Image_URL is nil, no update was provided
 	if incomingData.Image_URL != nil {
 		product.Image_URL = *incomingData.Image_URL
 	}
@@ -207,6 +204,7 @@ func (a *applicationDependencies) deleteProductHandler(w http.ResponseWriter, r 
 }
 
 // create the list handler
+// currently not working and I really don't know why, Will as Mr. Dalwin when I get some sleep
 func (a *applicationDependencies) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 	// create a struct to hold the query parameters
 	// no field name for the type data.Filters

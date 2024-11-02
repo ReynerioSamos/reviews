@@ -60,7 +60,7 @@ func ValidateReview(v *validator.Validator, review *Review, vdb ReviewModel) {
 }
 
 func (r ReviewModel) Insert(review *Review) error {
-	// Begin a transaction since we'll need to update two tables atomically
+	// Begin a transaction since we'll need to update two tables automically
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -138,7 +138,7 @@ func (r ReviewModel) Get(id int64) (*Review, error) {
 		JOIN product p ON r.prod_id = p.pid
 		WHERE r.rid = $1
 		`
-	// declare a variable of type product to store the returned product
+	// declare a variable of type review to store the returned review
 	var review Review
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -321,19 +321,13 @@ func (r ReviewModel) Delete(id int64) error {
 }
 
 // Get all comments
+// Same deal as product's GetAll(), query works but issue with how reviews[] array and/or metadata{} are populated
 func (r ReviewModel) GetAll(prod_id int, rating int, helpful_count int, filters Filters) ([]*Review, Metadata, error) {
-	// The SQL query to be executed against database table
 
-	// We will use Postgresql built in full text search feature
-	// which allows us to do natural language searches
-	// $? = '' allows for content and author to be optional
-
-	// Query formatted string to be able to add the sort values, We are not sure what will be the column
-	// sort by or the order
 	query := fmt.Sprintf(`
 		SELECT COUNT(*) OVER(), 
 			r.rid, r.created_at, r.prod_id,
-			r.rating, r.helpful_count, p.name
+			r.rating, r.helpful_count, p.pname
 		FROM review r
 		JOIN product p ON p.pid = r.prod_id
 		WHERE 	(CAST(r.prod_id AS TEXT) = $1 OR $1 = '')
@@ -376,8 +370,11 @@ func (r ReviewModel) GetAll(prod_id int, rating int, helpful_count int, filters 
 		reviews = append(reviews, &review)
 	} // end of the loop
 
+	err = rows.Err()
+	if err != nil {
+		return nil, Metadata{}, err
+	}
 	// create the metadata
 	metadata := calculateMetaData(totalRecords, filters.Page, filters.PageSize)
-
 	return reviews, metadata, nil
 }

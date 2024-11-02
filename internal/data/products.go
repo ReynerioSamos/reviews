@@ -52,21 +52,14 @@ func (p ProductModel) Insert(product *Product) error {
 		`
 	// the actual values to replace $1, and $2
 	args := []any{product.Pname, product.Product_Category, product.Image_URL}
-
-	// Create a context with a 3-second timeout. No database
-	// operation should take more than 3 seconds or we will quit it
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-
-	// executre the query against the products database table. We ask for the
-	// id, created_at, and the version to be sent back to us which we will use
-	// to update the product struct later on
 
 	return p.DB.QueryRowContext(ctx, query, args...).Scan(&product.PID, &product.CreatedAt)
 }
 
 // Get/Read Functionality
-// Get a specific Coment from the products table
+// Get a specific product from the products table
 func (p ProductModel) Get(id int64) (*Product, error) {
 	// check if the id is valid
 	if id < 1 {
@@ -150,7 +143,7 @@ func (p ProductModel) Delete(id int64) error {
 
 	// ExecContext does not return any rows unlike QueryRowContext.
 	// It only returns information about the query execution
-	// such as how many rows were affected
+
 	result, err := p.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("deleting product: %w", err)
@@ -170,16 +163,14 @@ func (p ProductModel) Delete(id int64) error {
 	return nil
 }
 
-// Get all comments
+// Get all products
+// runs the query, and checked the query manually to see if any results show and they do
+// some issue with either the handler or how the product[] array or metadata type
+// populate
 func (p ProductModel) GetAll(pname string, product_category string, avg_rating float32, filters Filters) ([]*Product, Metadata, error) {
-	// The SQL query to be executed against database table
 
-	// We will use Postgresql built in full text search feature
-	// which allows us to do natural language searches
-	// $? = '' allows for content and author to be optional
-
-	// Query formatted string to be able to add the sort values, We are not sure what will be the column
-	// sort by or the order
+	//Log input params for diagnostics
+	fmt.Printf("GetAll: pname=%s, product_category=%s, avg_rating=%.2f, filters=%+v\n", pname, product_category, avg_rating, filters)
 
 	// Format the avg_rating to text for tsquery compatibility
 	avgRatingStr := fmt.Sprintf("%.2f", avg_rating)
@@ -197,6 +188,8 @@ func (p ProductModel) GetAll(pname string, product_category string, avg_rating f
 		LIMIT $4 OFFSET $5
 		`
 
+	// log generated SQL query
+	fmt.Printf("GetAll: SQL query=%s\n", query)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

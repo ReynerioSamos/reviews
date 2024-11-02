@@ -31,7 +31,6 @@ func (a *applicationDependencies) writeJson(w http.ResponseWriter, status int, d
 	jsResponse = append(jsResponse, '\n')
 	for key, value := range headers {
 		w.Header()[key] = value
-		//w.Header().Set(key, value[0])
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -43,16 +42,14 @@ func (a *applicationDependencies) writeJson(w http.ResponseWriter, status int, d
 }
 
 func (a *applicationDependencies) readJson(w http.ResponseWriter, r *http.Request, destination any) error {
-	// what is the max size of the request body (250KB seems reasonable)
+	// max size of the request body (250KB seems reasonable)
 	maxBytes := 256_000
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
-	// our decoder will check for unknown fields
+	// decoder will check for unknown fields
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
-	//let start the decoding
 
-	//err := json.NewDecoder(r.Body).Decode(destination)
-	err := dec.Decode(destination) //OCT 22,2024
+	err := dec.Decode(destination)
 	if err != nil {
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError

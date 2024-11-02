@@ -1,23 +1,21 @@
 package data
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ReynerioSamos/reviews/internal/validator"
 )
 
-// if an API does not pagination, it's not an API
-// Also rate limiting, sorting, and graceful shutdown are the bare minimum of professional APIs
-// The Filters type will contain the fields related to pagination
-// and eventually the fields related to sorting
-
 type Filters struct {
-	Page         int // which page number does the client want
-	PageSize     int // how records per page
-	Sort         string
-	SortSafeList []string //allowed sort fiels
+	Page         int      // which page number does the client want
+	PageSize     int      // how many records per page
+	Sort         string   // what to sort by
+	SortSafeList []string //allowed sort fields
 }
 
+// store Metadata into a struct for now
+// omitempty allows for it to be optional
 type Metadata struct {
 	CurrentPage  int `json:"current_page,omitempty"`
 	PageSize     int `json:"page_size,omitempty"`
@@ -30,12 +28,16 @@ func ValidateFilters(v *validator.Validator, f Filters) {
 	// Validate page number
 	v.Check(f.Page > 0, "page", "must be greater than zero")
 	v.Check(f.Page <= 500, "page", "must be a maximum of 500")
+	// logging to help diagnose issue
+	fmt.Printf("Page: %d\n", f.Page)
 
 	// Validate page size
 	v.Check(f.PageSize > 0, "page_size", "must be greater than zero")
 	v.Check(f.PageSize <= 100, "page_size", "must be a maximum of 100")
+	fmt.Printf("PageSize: %d\n", f.PageSize)
 	// Check if sort fields provided are valid
 	v.Check(validator.PermittedValue(f.Sort, f.SortSafeList...), "sort", "invalid sort value")
+	fmt.Printf("Sort: %s\n", f.Sort)
 }
 
 // Implement the sorting feature
@@ -66,7 +68,7 @@ func (f Filters) limit() int {
 }
 
 // calculate the offset so that we remember how many records have been sent
-// and how many remail to be sent
+// and how many remain to be sent
 func (f Filters) offset() int {
 	return (f.Page - 1) * f.PageSize
 }
@@ -74,9 +76,11 @@ func (f Filters) offset() int {
 // Calculate the metadata
 func calculateMetaData(totalRecords int, currentPage int, pageSize int) Metadata {
 	if totalRecords == 0 {
+		//return empty Metadata if no records
 		return Metadata{}
 	}
 
+	// return the calculated Metadata
 	return Metadata{
 		CurrentPage:  currentPage,
 		PageSize:     pageSize,

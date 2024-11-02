@@ -10,7 +10,9 @@ import (
 	"github.com/ReynerioSamos/reviews/internal/validator"
 )
 
+// handles Create/Post method
 func (a *applicationDependencies) createReviewHandler(w http.ResponseWriter, r *http.Request) {
+	// hold the incoming data in a struct
 	var incomingData struct {
 		Prod_ID int64 `json:"prod_id"`
 		Rating  int8  `json:"rating"`
@@ -22,11 +24,13 @@ func (a *applicationDependencies) createReviewHandler(w http.ResponseWriter, r *
 		return
 	}
 
+	// stores struct data for incommingdata into Review object
 	review := &data.Review{
 		Prod_ID: incomingData.Prod_ID,
 		Rating:  incomingData.Rating,
 	}
 
+	// validate fields
 	v := validator.New()
 	data.ValidateReview(v, review, a.reviewModel)
 	if !v.IsEmpty() {
@@ -40,11 +44,13 @@ func (a *applicationDependencies) createReviewHandler(w http.ResponseWriter, r *
 		return
 	}
 
+	// print the review data being created
 	fmt.Fprintf(w, "%+v\n", incomingData)
 
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/review/%d", review.RID))
 
+	// send it as a json envelope
 	data := envelope{
 		"review": review,
 	}
@@ -54,6 +60,7 @@ func (a *applicationDependencies) createReviewHandler(w http.ResponseWriter, r *
 	}
 }
 
+// Display/Read functionality
 func (a *applicationDependencies) displayReviewHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := a.readIDParam(r)
 	if err != nil {
@@ -71,7 +78,7 @@ func (a *applicationDependencies) displayReviewHandler(w http.ResponseWriter, r 
 		}
 		return
 	}
-
+	// return read data as an envelope
 	data := envelope{
 		"review": review,
 	}
@@ -81,6 +88,7 @@ func (a *applicationDependencies) displayReviewHandler(w http.ResponseWriter, r 
 	}
 }
 
+// Update functionality
 func (a *applicationDependencies) updateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := a.readIDParam(r)
 	if err != nil {
@@ -99,6 +107,7 @@ func (a *applicationDependencies) updateReviewHandler(w http.ResponseWriter, r *
 		return
 	}
 
+	// temp store data to be updated into a struct
 	var incomingData struct {
 		Rating *int8 `json:"rating"`
 	}
@@ -113,6 +122,7 @@ func (a *applicationDependencies) updateReviewHandler(w http.ResponseWriter, r *
 		review.Rating = *incomingData.Rating
 	}
 
+	// validate the incoming data
 	v := validator.New()
 	data.ValidateReview(v, review, a.reviewModel)
 	if !v.IsEmpty() {
@@ -126,6 +136,7 @@ func (a *applicationDependencies) updateReviewHandler(w http.ResponseWriter, r *
 		return
 	}
 
+	// return the newly updated data
 	data := envelope{
 		"review": review,
 	}
@@ -135,6 +146,10 @@ func (a *applicationDependencies) updateReviewHandler(w http.ResponseWriter, r *
 	}
 }
 
+// separate update functionality for helpful_counter
+// idea was if reviews had something like a text body people wrote too
+// this would add functionality to the review to click a simple thumbs up or down button
+// to give it +1 count or -1 count respectively
 func (a *applicationDependencies) updateHelpfulCountHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := a.readIDParam(r)
 	if err != nil {
@@ -142,6 +157,7 @@ func (a *applicationDependencies) updateHelpfulCountHandler(w http.ResponseWrite
 		return
 	}
 
+	// temp store increment/decrement as a struct
 	var incomingData struct {
 		Increment int8 `json:"increment"`
 	}
@@ -152,6 +168,7 @@ func (a *applicationDependencies) updateHelpfulCountHandler(w http.ResponseWrite
 		return
 	}
 
+	// validate and check whether it's a +1 or -1
 	if incomingData.Increment != 1 && incomingData.Increment != -1 {
 		v := validator.New()
 		v.AddError("increment", "must be either 1 or -1")
@@ -170,6 +187,7 @@ func (a *applicationDependencies) updateHelpfulCountHandler(w http.ResponseWrite
 		return
 	}
 
+	// sent evelope notify of successful helpful_count update
 	data := envelope{
 		"message": "helpful count updated successfully",
 	}
@@ -179,6 +197,7 @@ func (a *applicationDependencies) updateHelpfulCountHandler(w http.ResponseWrite
 	}
 }
 
+// Delete functionality
 func (a *applicationDependencies) deleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := a.readIDParam(r)
 	if err != nil {
@@ -196,7 +215,7 @@ func (a *applicationDependencies) deleteReviewHandler(w http.ResponseWriter, r *
 		}
 		return
 	}
-
+	// send envelope informing of successful deletion
 	data := envelope{
 		"message": "review successfully deleted",
 	}
@@ -206,14 +225,19 @@ func (a *applicationDependencies) deleteReviewHandler(w http.ResponseWriter, r *
 	}
 }
 
+// listReview for listing, searching and sorting
+// currently doesn't work alongside ListProductHandler and I still don't know why,
+// hoping some sleep will let me better see where I went wrong, currently up from 8AM - 4AM
+// working on this Test # 1, only taking breaks for food and bathroom
 func (a *applicationDependencies) ListReviewsHandler(w http.ResponseWriter, r *http.Request) {
+	// store parameters to query data into a struct
 	var queryParametersData struct {
 		Prod_ID       int
 		Rating        int
 		Helpful_Count int
 		data.Filters
 	}
-
+	// get the parameters from the url
 	queryParameters := r.URL.Query()
 
 	prodIDStr := a.getSingleQueryParameter(queryParameters, "prod_id", "")
