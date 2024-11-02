@@ -25,7 +25,7 @@ func (a *applicationDependencies) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/v1/product/:id", a.deleteProductHandler)
 
 	//routes for reviews CRUD functionality
-	router.HandlerFunc(http.MethodPost, "/v1/preview", a.createReviewHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/review", a.createReviewHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/review/:id", a.displayReviewHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/review/:id", a.updateReviewHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/review/:id", a.deleteReviewHandler)
