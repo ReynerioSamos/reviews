@@ -16,9 +16,9 @@ To be done individually.
 
 - [X] d. delete a specific product
 
-- [x] e. display all products
+- [] e. display all products
 
-- [x] f. Perform searching, filtering, sorting on products
+- [] f. Perform searching, filtering, sorting on products
 
 
 [X] g. create a review for a specific product
