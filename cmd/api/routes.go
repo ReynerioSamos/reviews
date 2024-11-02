@@ -30,10 +30,9 @@ func (a *applicationDependencies) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/review/:id", a.updateReviewHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/review/:id", a.deleteReviewHandler)
 
-	// route for List All Product handler
-	router.HandlerFunc(http.MethodGet, "v1/product", a.ListProductHandler)
-	//route for List All Reviews handler
-	router.HandlerFunc(http.MethodGet, "/v1/review", a.ListReviewsHandler)
+	// route for ListAll<data> handlers
+	router.HandlerFunc(http.MethodGet, "/v1/products", a.ListProductsHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/reviews", a.ListReviewsHandler)
 
 	//panic recover
 	return a.recoverPanic(router)
